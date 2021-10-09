@@ -196,7 +196,9 @@ export class BasicRuntime {
         this.configured_(true);
       });
 
-    this.clientOptions_ = params.clientOptions;
+    this.clientOptions_ = Object.assign({}, params.clientOptions, {
+      forceLangInIframes: true,
+    });
     this.setupAndShowAutoPrompt({
       autoPromptType: params.autoPromptType,
       alwaysShow: params.alwaysShow || false,
