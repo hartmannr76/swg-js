@@ -181,7 +181,6 @@ export class BasicRuntime {
   }
 
   /** @override */
-  /* eslint-disable no-unused-vars */
   init(params) {
     this.pageConfigWriter_ = new PageConfigWriter(this.doc_);
     this.pageConfigWriter_
@@ -206,7 +205,6 @@ export class BasicRuntime {
     this.setOnLoginRequest();
     this.processEntitlements();
   }
-  /* eslint-enable no-unused-vars */
 
   /** @override */
   setOnEntitlementsResponse(callback) {
@@ -261,7 +259,6 @@ export class BasicRuntime {
  * @implements  {../api/basic-subscriptions.BasicSubscriptions}
  * @implements {./deps.DepsDef}
  */
-// eslint-disable-next-line no-unused-vars
 export class ConfiguredBasicRuntime {
   /**
    * @param {!Window|!Document|!../model/doc.Doc} winOrDoc
