@@ -211,6 +211,7 @@ export class ClientConfigManager {
     return new ClientConfig({
       autoPromptConfig,
       paySwgVersion,
+      usePrefixedHostPath: json['usePrefixedHostPath'],
       useUpdatedOfferFlows: json['useUpdatedOfferFlows'],
       uiPredicates,
       attributionParams,
