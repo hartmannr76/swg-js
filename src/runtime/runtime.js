@@ -543,6 +543,7 @@ export class ConfiguredRuntime {
    *     fetcher: (!Fetcher|undefined),
    *     configPromise: (!Promise|undefined),
    *     enableGoogleAnalytics: (boolean|undefined),
+   *     entitlementsManager: (function(new:EntitlementsManager)),
    *   }=} integr
    * @param {!../api/subscriptions.Config=} config
    * @param {!{
@@ -626,8 +627,12 @@ export class ConfiguredRuntime {
     /** @private @const {!Logger} */
     this.logger_ = new Logger(this);
 
-    /** @private @const {!EntitlementsManager} */
-    this.entitlementsManager_ = new EntitlementsManager(
+    /** @constructor @extends {EntitlementsManager} */
+    const entitlementManager =
+      integr.entitlementsManager || EntitlementsManager;
+
+    /** @private @const @extends {EntitlementsManager} */
+    this.entitlementsManager_ = new entitlementManager(
       this.win_,
       this.pageConfig_,
       this.fetcher_,
@@ -638,7 +643,8 @@ export class ConfiguredRuntime {
     this.clientConfigManager_ = new ClientConfigManager(
       pageConfig.getPublicationId(),
       this.fetcher_,
-      clientOptions
+      clientOptions,
+      this // See note about 'this' above
     );
 
     /** @private @const {!Propensity} */

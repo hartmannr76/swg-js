@@ -31,8 +31,9 @@ export class ClientConfigManager {
    * @param {string} publicationId
    * @param {!./fetcher.Fetcher} fetcher
    * @param {!../api/basic-subscriptions.ClientOptions=} clientOptions
+   * @param {!./deps.DepsDef} deps
    */
-  constructor(publicationId, fetcher, clientOptions) {
+  constructor(publicationId, fetcher, clientOptions, deps) {
     /** @private @const {!../api/basic-subscriptions.ClientOptions} */
     this.clientOptions_ = clientOptions || {};
 
@@ -42,8 +43,19 @@ export class ClientConfigManager {
     /** @private @const {!./fetcher.Fetcher} */
     this.fetcher_ = fetcher;
 
-    /** @private {?Promise<!ClientConfig>} */
-    this.responsePromise_ = null;
+    /** @private {Promise<!ClientConfig>} */
+    this.responsePromise_ = deps
+      .entitlementsManager()
+      .getArticle()
+      .then((article) => {
+        if (article) {
+          return this.parseClientConfig_(article['clientConfig']);
+        } else {
+          // If there was no article from the entitlement manager, we need
+          // to fetch our own using the internal version.
+          return this.fetch_();
+        }
+      });
   }
 
   /**
