@@ -30,6 +30,9 @@ export class ArticleManager extends EntitlementsManager {
     /** @override */
     this.encodedParamName_ = 'encodedEntitlementsParams';
 
+    /** @override */
+    this.action_ = '/article';
+
     /** @private {!boolean} */
     this.fetchSuccess_ = false;
 
@@ -60,16 +63,14 @@ export class ArticleManager extends EntitlementsManager {
   }
 
   /** @override @inheritdoc */
-  fetchFromService_(params) {
-    const url =
-      '/publication/' + encodeURIComponent(this.publicationId_) + '/article';
-    return this.fetcher_
-      .fetchCredentialedJson(serviceUrl(url + params))
+  fetch_(params) {
+    return super
+      .fetch_(params)
       .then((json) => {
         this.fetchSuccess_ = true;
         this.resolveArticleResponse_(json);
         return this.articleResponsePromise_.then(
-          (artcile) => artcile['entitlements']
+          (article) => article['entitlements']
         );
       })
       .catch((error) => {

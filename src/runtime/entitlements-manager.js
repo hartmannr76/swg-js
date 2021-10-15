@@ -100,6 +100,9 @@ export class EntitlementsManager {
     /** @protected {!string} */
     this.encodedParamName_ = 'encodedParams';
 
+    /** @protected {!string} */
+    this.action_ = '/entitlements';
+
     /** @private @const {!./storage.Storage} */
     this.storage_ = deps.storage();
 
@@ -404,16 +407,18 @@ export class EntitlementsManager {
     this.positiveRetries_ = 0;
     const attempt = () => {
       positiveRetries--;
-      return this.fetch_(params).then((entitlements) => {
-        if (entitlements.enablesThis() || positiveRetries <= 0) {
-          return entitlements;
-        }
-        return new Promise((resolve) => {
-          this.win_.setTimeout(() => {
-            resolve(attempt());
-          }, 550);
+      return this.fetch_(params)
+        .then((json) => this.parseEntitlements(json))
+        .then((entitlements) => {
+          if (entitlements.enablesThis() || positiveRetries <= 0) {
+            return entitlements;
+          }
+          return new Promise((resolve) => {
+            this.win_.setTimeout(() => {
+              resolve(attempt());
+            }, 550);
+          });
         });
-      });
     };
     return attempt();
   }
@@ -695,8 +700,8 @@ export class EntitlementsManager {
 
   /**
    * @param {!GetEntitlementsParamsExternalDef=} params
-   * @return {!Promise<!Entitlements>}
-   * @private
+   * @return {!Promise<!Object>}
+   * @protected
    */
   fetch_(params) {
     // Get swgUserToken from getEntitlements params
@@ -706,7 +711,8 @@ export class EntitlementsManager {
       ? Promise.resolve(swgUserTokenParam)
       : this.storage_.get(Constants.USER_TOKEN, true);
 
-    let newQueryParams = '';
+    let url =
+      '/publication/' + encodeURIComponent(this.publicationId_) + this.action_;
 
     return Promise.all([
       hash(getCanonicalUrl(this.deps_.doc())),
@@ -716,15 +722,12 @@ export class EntitlementsManager {
         const hashedCanonicalUrl = values[0];
         const swgUserToken = values[1];
 
-        newQueryParams = addDevModeParamsToUrl(
-          this.win_.location,
-          newQueryParams
-        );
+        url = addDevModeParamsToUrl(this.win_.location, url);
 
         // Add encryption param.
         if (params?.encryption) {
-          newQueryParams = addQueryParam(
-            newQueryParams,
+          url = addQueryParam(
+            url,
             'crypt',
             params.encryption.encryptedDocumentKey
           );
@@ -732,7 +735,7 @@ export class EntitlementsManager {
 
         // Add swgUserToken param.
         if (swgUserToken) {
-          newQueryParams = addQueryParam(newQueryParams, 'sut', swgUserToken);
+          url = addQueryParam(url, 'sut', swgUserToken);
         }
 
         // Add metering params.
@@ -799,8 +802,8 @@ export class EntitlementsManager {
             this.encodedParams_ = base64UrlEncodeFromBytes(
               utf8EncodeSync(JSON.stringify(encodableParams))
             );
-            newQueryParams = addQueryParam(
-              newQueryParams,
+            url = addQueryParam(
+              url,
               this.encodedParamName_,
               this.encodedParams_
             );
@@ -811,14 +814,14 @@ export class EntitlementsManager {
           }
         }
 
-        // Build query parameters.
-        return newQueryParams;
+        // Build URL.
+        return serviceUrl(url);
       })
-      .then((params) => {
+      .then((url) => {
         this.deps_
           .eventManager()
           .logSwgEvent(AnalyticsEvent.ACTION_GET_ENTITLEMENTS, false);
-        return this.fetchFromService_(params);
+        return this.fetcher_.fetchCredentialedJson(url);
       })
       .then((json) => {
         if (json.errorMessages && json.errorMessages.length > 0) {
@@ -826,22 +829,8 @@ export class EntitlementsManager {
             warn('SwG Entitlements: ' + errorMessage);
           });
         }
-        return this.parseEntitlements(json);
+        return json;
       });
-  }
-
-  /**
-   * Calls the service backend to get an entitlements object.
-   * @param {string} params
-   * @returns {Promise<Object>}
-   * @protected
-   */
-  fetchFromService_(params) {
-    const url =
-      '/publication/' +
-      encodeURIComponent(this.publicationId_) +
-      '/entitlements';
-    return this.fetcher_.fetchCredentialedJson(serviceUrl(url + params));
   }
 }
 
