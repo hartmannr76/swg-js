@@ -628,11 +628,11 @@ export class ConfiguredRuntime {
     this.logger_ = new Logger(this);
 
     /** @constructor @extends {EntitlementsManager} */
-    const entitlementManager =
+    const entitlementsManager =
       integr.entitlementsManager || EntitlementsManager;
 
     /** @private @const @extends {EntitlementsManager} */
-    this.entitlementsManager_ = new entitlementManager(
+    this.entitlementsManager_ = new entitlementsManager(
       this.win_,
       this.pageConfig_,
       this.fetcher_,

@@ -229,15 +229,15 @@ export class EntitlementsManager {
 
     const token = this.getGaaToken_();
 
-    const jwt = new EntitlementJwt();
-    jwt.setSource(entitlement.source);
-    jwt.setJwt(entitlement.subscriptionToken);
-    return this.postEntitlementsRequest_(
-      jwt,
-      EntitlementResult.UNLOCKED_METER,
-      EntitlementSource.GOOGLE_SHOWCASE_METERING_SERVICE,
-      token
-    );
+    const usedEntitlement = new EntitlementJwt();
+    usedEntitlement.setSource(entitlement.source);
+    usedEntitlement.setJwt(entitlement.subscriptionToken);
+    return this.postEntitlementsRequest_({
+      usedEntitlement,
+      entitlementResult: EntitlementResult.UNLOCKED_METER,
+      entitlementSource: EntitlementSource.GOOGLE_SHOWCASE_METERING_SERVICE,
+      optionalToken: token,
+    });
   }
 
   /**
@@ -259,25 +259,27 @@ export class EntitlementsManager {
     }
 
     // A subset of analytics events are also an entitlement result
-    const result = analyticsEventToEntitlementResult(event.eventType);
-    if (!result) {
+    const entitlementResult = analyticsEventToEntitlementResult(
+      event.eventType
+    );
+    if (!entitlementResult) {
       return;
     }
-    let source = null;
+    let entitlementSource = null;
 
     switch (event.eventOriginator) {
       // Publisher JS logged this event.
       case EventOriginator.SHOWCASE_CLIENT:
-        source = EntitlementSource.PUBLISHER_ENTITLEMENT;
+        entitlementSource = EntitlementSource.PUBLISHER_ENTITLEMENT;
         break;
       // Swgjs logged this event.
       case EventOriginator.SWG_CLIENT:
-        if (result == EntitlementResult.UNLOCKED_METER) {
+        if (entitlementResult == EntitlementResult.UNLOCKED_METER) {
           // The `consumeMeter_` method already tracks this.
           return;
         }
 
-        source = EntitlementSource.GOOGLE_SUBSCRIBER_ENTITLEMENT;
+        entitlementSource = EntitlementSource.GOOGLE_SUBSCRIBER_ENTITLEMENT;
         break;
       default:
         return;
@@ -285,24 +287,24 @@ export class EntitlementsManager {
     const token = this.getGaaToken_();
     const isUserRegistered =
       event?.additionalParameters?.getIsUserRegistered?.();
-    this.postEntitlementsRequest_(
-      new EntitlementJwt(),
-      result,
-      source,
-      token,
-      isUserRegistered
-    );
+    this.postEntitlementsRequest_({
+      usedEntitlement: new EntitlementJwt(),
+      entitlementResult,
+      entitlementSource,
+      optionalToken: token,
+      optionalIsUserRegistered: isUserRegistered,
+    });
   }
 
   // Informs the Entitlements server about the entitlement used
   // to unlock the page.
-  postEntitlementsRequest_(
+  postEntitlementsRequest_({
     usedEntitlement,
     entitlementResult,
     entitlementSource,
     optionalToken = '',
-    optionalIsUserRegistered = null
-  ) {
+    optionalIsUserRegistered = null,
+  }) {
     const message = new EntitlementsRequest();
     message.setUsedEntitlement(usedEntitlement);
     message.setClientEventTime(toTimestamp(Date.now()));
@@ -312,11 +314,8 @@ export class EntitlementsManager {
     if (typeof optionalIsUserRegistered === 'boolean') {
       message.setIsUserRegistered(optionalIsUserRegistered);
     }
-
     let url =
-      '/publication/' +
-      encodeURIComponent(this.publicationId_) +
-      '/entitlements';
+      '/publication/' + encodeURIComponent(this.publicationId_) + this.action_;
     url = addDevModeParamsToUrl(this.win_.location, url);
 
     // Promise that sets this.encodedParams_ when it resolves.

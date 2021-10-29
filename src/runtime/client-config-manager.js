@@ -43,19 +43,11 @@ export class ClientConfigManager {
     /** @private @const {!./fetcher.Fetcher} */
     this.fetcher_ = fetcher;
 
-    /** @private {Promise<!ClientConfig>} */
-    this.responsePromise_ = deps
-      .entitlementsManager()
-      .getArticle()
-      .then((article) => {
-        if (article) {
-          return this.parseClientConfig_(article['clientConfig']);
-        } else {
-          // If there was no article from the entitlement manager, we need
-          // to fetch our own using the internal version.
-          return this.fetch_();
-        }
-      });
+    /** @private @const {!./deps.DepsDef} */
+    this.deps_ = deps;
+
+    /** @private {?Promise<!ClientConfig>} */
+    this.responsePromise_ = null;
   }
 
   /**
@@ -156,19 +148,30 @@ export class ClientConfigManager {
    * @return {!Promise<!ClientConfig>}
    */
   fetch_() {
-    const url = serviceUrl(
-      '/publication/' +
-        encodeURIComponent(this.publicationId_) +
-        '/clientconfiguration'
-    );
-    return this.fetcher_.fetchCredentialedJson(url).then((json) => {
-      if (json.errorMessages && json.errorMessages.length > 0) {
-        json.errorMessages.forEach((errorMessage) => {
-          warn('SwG ClientConfigManager: ' + errorMessage);
-        });
-      }
-      return this.parseClientConfig_(json);
-    });
+    return this.deps_
+      .entitlementsManager()
+      .getArticle()
+      .then((article) => {
+        if (article) {
+          return this.parseClientConfig_(article['clientConfig']);
+        } else {
+          // If there was no article from the entitlement manager, we need
+          // to fetch our own using the internal version.
+          const url = serviceUrl(
+            '/publication/' +
+              encodeURIComponent(this.publicationId_) +
+              '/clientconfiguration'
+          );
+          return this.fetcher_.fetchCredentialedJson(url).then((json) => {
+            if (json.errorMessages && json.errorMessages.length > 0) {
+              json.errorMessages.forEach((errorMessage) => {
+                warn('SwG ClientConfigManager: ' + errorMessage);
+              });
+            }
+            return this.parseClientConfig_(json);
+          });
+        }
+      });
   }
 
   /**

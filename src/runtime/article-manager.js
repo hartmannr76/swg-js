@@ -15,7 +15,6 @@
  */
 
 import {EntitlementsManager} from './entitlements-manager';
-import {serviceUrl} from './services';
 
 export class ArticleManager extends EntitlementsManager {
   /**
@@ -47,7 +46,7 @@ export class ArticleManager extends EntitlementsManager {
 
   /** @override @inheritdoc */
   getArticle() {
-    return this.articleResponsePromise_;
+    return this.articleResponsePromise_ || Promise.resolve(null);
   }
 
   /** @override @inheritdoc */
@@ -69,9 +68,7 @@ export class ArticleManager extends EntitlementsManager {
       .then((json) => {
         this.fetchSuccess_ = true;
         this.resolveArticleResponse_(json);
-        return this.articleResponsePromise_.then(
-          (article) => article['entitlements']
-        );
+        return json['entitlements'];
       })
       .catch((error) => {
         // We need to fail the article promise as well.
