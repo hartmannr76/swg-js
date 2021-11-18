@@ -15,9 +15,32 @@
  */
 'use strict';
 
-const chromeDriver = require('chromedriver');
-const geckoDriver = require('geckodriver');
-const seleniumServer = require('selenium-server');
+const Services = {};
+loadServices();
+
+const CHROME_CAPABILITIES = {
+  browserName: 'chrome',
+  chromeOptions: {
+    w3c: false,
+    args: ['--headless'],
+  },
+};
+
+const FIREFOX_CAPABILITIES = {
+  browserName: 'firefox',
+  acceptInsecureCerts: true,
+  alwaysMatch: {
+    'moz:firefoxOptions': {
+      args: ['-headless'],
+    },
+  },
+};
+
+const SAFARI_CAPABILITIES = {
+  browserName: 'safari',
+  javascriptEnabled: true,
+  acceptSslCerts: true,
+};
 
 /* eslint-disable google-camelcase/google-camelcase */
 module.exports = {
@@ -37,16 +60,11 @@ module.exports = {
         webdriverProcess: 'chromedriver',
       },
 
-      desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          args: ['--headless'],
-        },
-      },
+      desiredCapabilities: CHROME_CAPABILITIES,
 
       webdriver: {
         start_process: true,
-        server_path: chromeDriver.path,
+        server_path: Services.chromedriver ? Services.chromedriver.path : '',
         port: 9515,
       },
     },
@@ -56,19 +74,12 @@ module.exports = {
         webdriverProcess: 'geckodriver',
       },
 
-      desiredCapabilities: {
-        browserName: 'firefox',
-        acceptInsecureCerts: true,
-        alwaysMatch: {
-          'moz:firefoxOptions': {
-            args: ['-headless'],
-          },
-        },
-      },
+      desiredCapabilities: FIREFOX_CAPABILITIES,
 
       webdriver: {
         start_process: true,
         server_path: 'node_modules/.bin/geckodriver',
+        // server_path: Services.geckodriver ? Services.geckodriver.path : '',
         cli_args: ['--log', 'debug'],
         port: 4444,
       },
@@ -79,11 +90,7 @@ module.exports = {
         webdriverProcess: 'safaridriver',
       },
 
-      desiredCapabilities: {
-        browserName: 'safari',
-        javascriptEnabled: true,
-        acceptSslCerts: true,
-      },
+      desiredCapabilities: SAFARI_CAPABILITIES,
 
       webdriver: {
         port: 4445,
@@ -97,10 +104,16 @@ module.exports = {
       selenium: {
         start_process: true,
         port: 4444,
-        server_path: seleniumServer.path,
+        server_path: Services.seleniumServer
+          ? Services.seleniumServer.path
+          : '',
         cli_args: {
-          'webdriver.chrome.driver': chromeDriver.path,
-          'webdriver.gecko.driver': geckoDriver.path,
+          'webdriver.gecko.driver': Services.geckodriver
+            ? Services.geckodriver.path
+            : '',
+          'webdriver.chrome.driver': Services.chromedriver
+            ? Services.chromedriver.path
+            : '',
         },
       },
       webdriver: {
@@ -110,27 +123,17 @@ module.exports = {
 
     'selenium.chrome': {
       extends: 'selenium',
-      desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          w3c: false,
-          args: ['--headless'],
-        },
-      },
+      desiredCapabilities: CHROME_CAPABILITIES,
     },
 
     'selenium.firefox': {
       extends: 'selenium',
-      desiredCapabilities: {
-        browserName: 'firefox',
-      },
+      desiredCapabilities: FIREFOX_CAPABILITIES,
     },
 
     'selenium.safari': {
       extends: 'selenium',
-      desiredCapabilities: {
-        browserName: 'safari',
-      },
+      desiredCapabilities: SAFARI_CAPABILITIES,
     },
 
     browserstack: {
@@ -163,67 +166,31 @@ module.exports = {
 
     'browserstack.chrome': {
       extends: 'browserstack',
-      desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          w3c: false,
-          args: ['--headless'],
-        },
-      },
+      desiredCapabilities: CHROME_CAPABILITIES,
     },
 
     'browserstack.firefox': {
       extends: 'browserstack',
-      desiredCapabilities: {
-        browserName: 'firefox',
-        acceptInsecureCerts: true,
-        alwaysMatch: {
-          'moz:firefoxOptions': {
-            args: ['-headless'],
-          },
-        },
-      },
+      desiredCapabilities: FIREFOX_CAPABILITIES,
     },
 
-    'browserstack.ie': {
+    'browserstack.safari': {
       extends: 'browserstack',
-      desiredCapabilities: {
-        browserName: 'IE',
-        browserVersion: '11.0',
-        'bstack:options': {
-          os: 'Windows',
-          osVersion: 10,
-          local: false,
-          seleniumVersion: '3.5.2',
-          resolution: '1366x768',
-        },
-      },
-    },
-
-    lambdatest: {
-      selenium: {
-        host: 'hub.lambdatest.com',
-        port: 80,
-      },
-
-      username: '${LT_USERNAME}',
-      access_key: '${LT_ACCESS_KEY}',
-
-      webdriver: {
-        keep_alive: true,
-        timeout_options: {
-          timeout: 60000,
-          retry_attempts: 3,
-        },
-      },
-    },
-
-    'lambdatest.chrome': {
-      extends: 'lambdatest',
-      desiredCapabilities: {
-        browserName: 'chrome',
-        headless: true,
-      },
+      desiredCapabilities: SAFARI_CAPABILITIES,
     },
   },
 };
+
+function loadServices() {
+  try {
+    Services.seleniumServer = require('selenium-server');
+  } catch (err) {}
+
+  try {
+    Services.chromedriver = require('chromedriver');
+  } catch (err) {}
+
+  try {
+    Services.geckodriver = require('geckodriver');
+  } catch (err) {}
+}

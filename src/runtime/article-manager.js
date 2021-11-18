@@ -37,7 +37,7 @@ export class ArticleManager extends EntitlementsManager {
 
     /** @private {!Promise<?Object>} */
     this.articleResponsePromise_ = new Promise((resolve, reject) => {
-      /** @private {!function(void, {value: Object | PromiseLike<Object>})} */
+      /** @private @param {Object|PromiseLike<Object>} value @returns {void} */
       this.resolveArticleResponse_ = resolve;
       /** @private {!function(void, {reason: Object})} */
       this.rejectArticleResponse_ = reject;
