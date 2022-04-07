@@ -17,6 +17,7 @@
 import {AudienceActivityEventListener} from './audience-activity-listener';
 import {AutoPromptManager} from './auto-prompt-manager';
 import {AutoPromptType} from '../api/basic-subscriptions';
+import {BasicRuntimeCallbacks} from './basic-runtime-callbacks';
 import {ButtonApi, ButtonAttributeValues} from './button-api';
 import {ConfiguredRuntime} from './runtime';
 import {Constants} from '../utils/constants';
@@ -99,15 +100,6 @@ export function installBasicRuntime(win) {
 
   // Automatically set up buttons already on the page.
   basicRuntime.setupButtons();
-
-  // Set the default entitlements response handler to consume a valid metering entitlement.
-  basicRuntime.setOnEntitlementsResponse((entitlementsPromise) => {
-    entitlementsPromise.then((entitlements) => {
-      if (entitlements.enablesThisWithGoogleMetering()) {
-        entitlements.consume();
-      }
-    });
-  });
 }
 
 /**
@@ -293,6 +285,7 @@ export class ConfiguredBasicRuntime {
     integr = integr || {};
     integr.configPromise = integr.configPromise || Promise.resolve();
     integr.fetcher = integr.fetcher || new XhrFetcher(this.win_);
+    integr.callbacks = new BasicRuntimeCallbacks();
     integr.enableGoogleAnalytics = true;
     integr.useArticleEndpoint = isExperimentOn(
       this.win_,

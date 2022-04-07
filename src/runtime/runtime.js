@@ -547,6 +547,7 @@ export class ConfiguredRuntime {
    * @param {!../model/page-config.PageConfig} pageConfig
    * @param {{
    *     fetcher: (!FetcherInterface|undefined),
+   *     callbacks: (!Callbacks|undefined),
    *     configPromise: (!Promise|undefined),
    *     enableGoogleAnalytics: (boolean|undefined),
    *     useArticleEndpoint: (boolean|undefined)
@@ -601,7 +602,7 @@ export class ConfiguredRuntime {
     this.dialogManager_ = new DialogManager(this.doc_);
 
     /** @private @const {!Callbacks} */
-    this.callbacks_ = new Callbacks();
+    this.callbacks_ = integr.callbacks || new Callbacks();
 
     /** @private {?OffersFlow} */
     this.lastOffersFlow_ = null;
