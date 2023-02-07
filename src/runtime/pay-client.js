@@ -47,11 +47,13 @@ function payUrl() {
 }
 
 /*global google */
-const PayReadyPromise = new Promise((resolve, reject) => {
+const PaymentsAsyncClientPromise = new Promise((resolve, reject) => {
   const scriptTag = self.document.createElement('script');
   scriptTag.async = true;
   scriptTag.src = 'https://pay.google.com/gp/p/js/pay.js';
-  scriptTag.onload = resolve;
+  scriptTag.onload = () => {
+    resolve(google.payments.api.PaymentsAsyncClient);
+  };
   scriptTag.onerror = reject;
 
   self.document.body.appendChild(scriptTag);
@@ -116,12 +118,11 @@ export class PayClient {
    * @private
    */
   async createClient_(options, googleTransactionId, handler) {
-    await PayReadyPromise;
+    const PaymentsAsyncClient = await PaymentsAsyncClientPromise;
     // Assign Google Transaction ID to PaymentsAsyncClient.googleTransactionId_
     // so it can be passed to gpay_async.js and stored in payment clearcut log.
-    google.payments.api.PaymentsAsyncClient.googleTransactionId_ =
-      googleTransactionId;
-    return new google.payments.api.PaymentsAsyncClient(
+    PaymentsAsyncClient.googleTransactionId_ = googleTransactionId;
+    return new PaymentsAsyncClient(
       options,
       handler,
       /* useIframe */ false,
